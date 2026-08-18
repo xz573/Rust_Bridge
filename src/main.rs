@@ -536,7 +536,7 @@ fn run_egm(shared: Arc<SharedState>, config: Arc<BridgeConfig>) -> Result<()> {
             Err(error) => return Err(error.into()),
         }
         let command = *shared.command.lock().expect("command poisoned");
-        let velocity = if command.valid
+        let mut velocity = if command.valid
             && command.received.elapsed() <= config.watchdog
             && egm_feedback_fresh(&shared, config.watchdog)
         {
@@ -544,6 +544,17 @@ fn run_egm(shared: Arc<SharedState>, config: Arc<BridgeConfig>) -> Result<()> {
         } else {
             [0.0; 3]
         };
+
+
+        //JOE ADDED--------------------
+        //Maximum speed the robot is allowed to move
+        const MAX_SPEED : f64 = 1.0;
+        //Clamp the velocity speeds
+        velocity[0] = velocity[0].clamp(-MAX_SPEED, MAX_SPEED);
+        velocity[1] = velocity[1].clamp(-MAX_SPEED, MAX_SPEED);
+        velocity[2] = velocity[2].clamp(-MAX_SPEED, MAX_SPEED);    
+        //JOE ADDED--------------------
+        
         let telemetry = *shared.telemetry.lock().expect("telemetry poisoned");
         socket.send(
             &make_sensor(
